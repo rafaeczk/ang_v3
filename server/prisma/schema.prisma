@@ -1,0 +1,57 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  MODERATOR
+}
+
+model User {
+  id        String   @id @unique @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  email String @unique
+  hash  String
+  name  String
+  tag   Int    @unique @default(autoincrement())
+
+  role                 Role                @default(USER)
+  isBanned             Boolean             @default(false)
+  isPrivate            Boolean             @default(false)
+  dataTables           DataTable[]         @relation("author")
+  sharedToMeDataTables DataTablesToUsers[]
+}
+
+model DataTablesToUsers {
+  sharedTo    User      @relation(fields: [sharedToId], references: [id])
+  sharedToId  String
+  dataTable   DataTable @relation(fields: [dataTableId], references: [id])
+  dataTableId String
+
+  @@id([sharedToId, dataTableId])
+}
+
+model DataTable {
+  id        String   @id @unique @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  title  String
+  header Json // [string, string]
+  body   Json // { content: [string, string], note?: string }[]
+
+  isPrivate Boolean             @default(true)
+  author    User                @relation("author", fields: [authorId], references: [id])
+  authorId  String
+  sharedTo  DataTablesToUsers[]
+}
